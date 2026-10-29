@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="token" content="__TOKEN__">
+  <meta name="platform" content="__PLATFORM__">
+  <meta name="mode" content="__MODE__">
+  <meta name="other-url" content="__OTHER_URL__">
+  <title>Diagnóstico de red · Nubeo Hosting</title>
+  <style nonce="__NONCE__">
+    :root {
+      --brand: #4f46e5; --brand-dark: #4338ca; --ink: #172033; --muted: #647089;
+      --bg: #f4f6fb; --card: #ffffff; --line: #e2e7f0; --ok: #12a05c; --ok-bg: #e6f6ee;
+      --err: #c8323c; --err-bg: #fdecee;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    h1, h2, h3, h4, p { margin: 0; }
+    code, pre { font-family: var(--mono); }
+
+    /* ───── Panel del cliente (la "página real") ───── */
+    .topbar { background: var(--card); border-bottom: 1px solid var(--line); }
+    .topbar-in { max-width: 1040px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 20px; }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; color: var(--brand); }
+    .crumbs { color: var(--muted); font-size: 14px; flex: 1; }
+    .crumbs b { color: var(--ink); font-weight: 600; }
+    .user { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--brand-dark); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+    .page { max-width: 1040px; margin: 0 auto; padding: 28px 24px 96px; display: grid; gap: 22px; }
+    .page h1 { font-size: 26px; letter-spacing: -0.02em; }
+    .page .sub { color: var(--muted); margin-top: 2px; }
+    .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .tile .v { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); margin-right: 6px; }
+
+    .tool { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .tool-head { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .tool-head h2 { font-size: 17px; }
+    .tool-head p { color: var(--muted); font-size: 14px; }
+    .tool-body { padding: 20px; display: grid; gap: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row input[type=text] { flex: 1 1 280px; font: inherit; padding: 10px 12px; border: 1px solid #cfd6e4; border-radius: 8px; background: #fff; color: var(--ink); }
+    .row input[type=text]:focus { outline: 2px solid #c7d2fe; border-color: var(--brand); }
+    .btn { font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 10px 18px; cursor: pointer; background: var(--brand); color: #fff; }
+    .btn:hover:not(:disabled) { background: var(--brand-dark); }
+    .btn:disabled { opacity: 0.6; cursor: progress; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .field-error { color: var(--err); background: var(--err-bg); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+    .terminal { margin: 0; background: #0f172a; color: #d6e2f5; border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.55; min-height: 120px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 340px; overflow: auto; }
+    .terminal.idle { color: #7d8aa5; }
+    .fine { font-size: 13px; color: var(--muted); }
+
+    /* ───── Modo clase (material didáctico, separado de la página) ───── */
+    .class-toggle { position: fixed; right: 20px; bottom: 20px; z-index: 20; font: 600 14px system-ui, sans-serif; background: #111827; color: #fff; border: 1px solid #374151; border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px #0004; }
+    .class-toggle:hover { background: #1f2937; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); z-index: 30; background: #0d1117; color: #d9e0ea; border-left: 1px solid #243040; display: grid; grid-template-rows: auto 1fr; box-shadow: -10px 0 30px #0006; }
+    .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #243040; }
+    .drawer-head h2 { font-size: 15px; }
+    .drawer-body { overflow: auto; padding: 16px 18px 28px; display: grid; gap: 18px; align-content: start; }
+    .drawer .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #8b97aa; font-weight: 700; margin-bottom: 6px; }
+    .drawer button { font: inherit; }
+    .close { background: none; border: 1px solid #243040; color: #d9e0ea; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+    .ver { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+    .ver.vulnerable { background: #2b161b; color: #ff7080; }
+    .ver.secure { background: #0f2a21; color: #44dc9c; }
+    .swap { color: #7aa2ff; font-size: 13px; margin-left: 8px; }
+    .chips { display: grid; gap: 6px; }
+    .chip { text-align: left; background: #141a23; color: #d9e0ea; border: 1px solid #243040; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: grid; gap: 2px; }
+    .chip:hover { background: #1b2432; border-color: #34445a; }
+    .chip.attack { border-left: 3px solid #ff7080; }
+    .chip.legit { border-left: 3px solid #44dc9c; }
+    .chip small { color: #8b97aa; }
+    .chip code { color: #ffc266; font-size: 12px; word-break: break-all; }
+    .exec { margin: 0; background: #0f141b; border: 1px solid #243040; border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: #d9e0ea; }
+    .exec mark { background: #3a2d12; color: #ffc266; border-radius: 3px; padding: 0 2px; box-shadow: inset 0 -1px 0 #ffc266; }
+    .verdict { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-block; background: #1c2533; color: #8b97aa; }
+    .verdict.exploited { background: #2b161b; color: #ff7080; }
+    .verdict.blocked, .verdict.ok { background: #0f2a21; color: #44dc9c; }
+    .why { font-size: 13px; color: #aab4c4; margin-top: 8px; padding-left: 10px; border-left: 2px solid #34445a; }
+    .note { font-size: 13px; color: #aab4c4; }
+    .gap { margin-top: 10px; }
+    .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #aab4c4; }
+    .drawer pre.src { margin: 0; background: #0f141b; border: 1px solid #243040; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: #d9e0ea; }
+    .drawer ol { margin: 0; padding-left: 18px; font-size: 13px; color: #aab4c4; display: grid; gap: 4px; }
+    .drawer code { background: #1c2533; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; color: #d9e0ea; }
+
+    @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .crumbs { display: none; } }
+  </style>
+</head>
+<body>
+  <!-- ═════════ Panel de cliente: lo que vería cualquier usuario ═════════ -->
+  <header class="topbar">
+    <div class="topbar-in">
+      <div class="logo">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M7 20a5 5 0 0 1-.6-9.96A7 7 0 0 1 20 9.6 5.2 5.2 0 0 1 19 20Z" fill="currentColor"/></svg>
+        nubeo
+      </div>
+      <p class="crumbs">Panel de cliente / Servidor <b>vps-mad-04</b> / <b>Diagnóstico de red</b></p>
+      <div class="user"><span class="avatar" aria-hidden="true">LF</span><span>Lucía Fernández</span></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div>
+      <h1>Diagnóstico de red</h1>
+      <p class="sub">Comprueba la conectividad de tu servidor hacia cualquier dominio o dirección IP.</p>
+    </div>
+
+    <section class="tiles" aria-label="Estado del servidor">
+      <div class="tile"><p class="k">Estado</p><p class="v"><span class="dot"></span>Operativo</p></div>
+      <div class="tile"><p class="k">Disponibilidad</p><p class="v">99,98 %</p></div>
+      <div class="tile"><p class="k">Plan</p><p class="v">VPS-2 · 4 GB</p></div>
+      <div class="tile"><p class="k">IP pública</p><p class="v">203.0.113.24</p></div>
+    </section>
+
+    <section class="tool">
+      <div class="tool-head">
+        <h2>Prueba de conectividad (ping)</h2>
+        <p>Se envían 2 paquetes ICMP desde tu servidor al destino indicado.</p>
+      </div>
+      <form class="tool-body" id="form" novalidate>
+        <div class="row">
+          <input type="text" id="host" aria-label="Dominio o dirección IP" placeholder="ejemplo.com o 192.0.2.10" spellcheck="false" autocomplete="off">
+          <button class="btn" type="submit" id="go">Ejecutar ping</button>
+        </div>
+        <p class="field-error" id="error" role="alert" hidden></p>
+        <pre class="terminal idle" id="out" aria-live="polite">Introduce un destino y pulsa «Ejecutar ping».</pre>
+        <p class="fine">Los resultados dependen de la red entre tu servidor y el destino.</p>
+      </form>
+    </section>
+  </main>
+
+  <!-- ═════════ Modo clase: material didáctico (no forma parte de la página) ═════════ -->
+  <button class="class-toggle" id="open-class" type="button">🎓 Modo clase</button>
+  <aside class="drawer" id="drawer" aria-label="Modo clase" hidden>
+    <div class="drawer-head">
+      <h2>🎓 Modo clase · Inyección de comandos</h2>
+      <button class="close" id="close-class" type="button">Cerrar</button>
+    </div>
+    <div class="drawer-body">
+      <div>
+        <p class="lbl">Versión que estás viendo</p>
+        <span class="ver" id="ver"></span><a class="swap" id="swap" href="#"></a>
+      </div>
+
+      <div>
+        <p class="lbl">Qué pasa</p>
+        <p class="note">La herramienta ejecuta <code>ping</code> en el servidor con el destino que escribe el usuario. Si ese texto se pega en una línea de comandos, el shell interpreta operadores como <code>&amp;&amp;</code> o <code>|</code> y ejecuta lo que el atacante añada.</p>
+      </div>
+
+      <div>
+        <p class="lbl">Probar (haz clic)</p>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div>
+        <p class="lbl">Lo que ejecutó el servidor</p>
+        <pre class="exec" id="exec">Aún no se ejecutó nada.</pre>
+        <div class="gap"><span class="verdict" id="verdict">Sin ejecutar</span></div>
+        <p class="why" id="why" hidden></p>
+      </div>
+
+      <label class="check" id="lista-wrap" hidden><input type="checkbox" id="sin-lista"> Desactivar la lista blanca (probar solo <code>execFile</code>)</label>
+
+      <div>
+        <p class="lbl" id="src-title"></p>
+        <pre class="src" id="src"></pre>
+      </div>
+
+      <div>
+        <p class="lbl">Guion sugerido</p>
+        <ol>
+          <li>Mostrar el uso normal con <code>127.0.0.1</code>.</li>
+          <li>Probar <code>&amp;&amp; whoami</code>: la página "de fábrica" devuelve el usuario del servidor.</li>
+          <li>Listar archivos: el atacante ya navega por el sistema de archivos de la aplicación.</li>
+          <li>Pasar a la versión corregida y repetir los mismos ataques.</li>
+          <li>Desactivar la lista blanca y ver cómo <code>execFile</code> sin shell sigue siendo seguro.</li>
+        </ol>
+      </div>
+    </div>
+  </aside>
+
+  <script nonce="__NONCE__">
+    // Todo el contenido dinámico se inserta como texto (textContent / nodos de texto), nunca como HTML.
+    const meta = (n) => document.querySelector(`meta[name="${n}"]`).content;
+    const TOKEN = meta('token'), PLATFORM = meta('platform'), MODE = meta('mode'), OTHER = meta('other-url');
+    const WIN = PLATFORM === 'win32';
+    const $ = (id) => document.getElementById(id);
+    const el = (tag, attrs = {}, ...kids) => {
+      const n = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      n.append(...kids);
+      return n;
+    };
+
+    // ───── Panel de cliente ─────
+    async function ping(host) {
+      const params = new URLSearchParams({ host });
+      if (MODE === 'secure' && $('sin-lista').checked) params.set('lista', '0');
+      const res = await fetch(`/api/${TOKEN}/ping?${params}`);
+      if (!res.ok) throw new Error(`No se pudo completar la prueba (HTTP ${res.status}).`);
+      return res.json();
+    }
+
+    async function run() {
+      const host = $('host').value;
+      $('error').hidden = true;
+      if (host.trim() === '') {
+        $('error').textContent = 'Indica un dominio o una dirección IP.';
+        $('error').hidden = false;
+        return;
+      }
+      $('go').disabled = true;
+      $('out').className = 'terminal idle';
+      $('out').textContent = 'Ejecutando…';
+      try {
+        const r = await ping(host);
+        if (r.rechazado) {
+          $('error').textContent = r.mensaje;
+          $('error').hidden = false;
+          $('out').textContent = 'Introduce un destino y pulsa «Ejecutar ping».';
+        } else {
+          $('out').className = 'terminal';
+          $('out').textContent = r.salida || '(sin salida)';
+        }
+        showClass(host, r);
+      } catch (err) {
+        $('out').className = 'terminal idle';
+        $('out').textContent = err.message;
+      } finally {
+        $('go').disabled = false;
+      }
+    }
+
+    $('form').addEventListener('submit', (e) => { e.preventDefault(); run(); });
+
+    // ───── Modo clase ─────
+    const LISTAR = WIN ? 'dir' : 'ls -la';
+    const ESCENARIOS = [
+      { cls: 'legit', title: 'Uso normal', note: 'Destino válido', host: '127.0.0.1' },
+      { cls: 'attack', title: 'Averiguar con qué usuario corre el servidor', note: 'Encadena un segundo comando', host: '127.0.0.1 && whoami' },
+      { cls: 'attack', title: 'Listar los archivos de la aplicación', note: 'Navegar el sistema de archivos', host: `127.0.0.1 && ${LISTAR}` },
+      { cls: 'attack', title: 'Obtener el nombre del equipo', note: 'Reconocimiento del entorno', host: '127.0.0.1 && hostname' },
+      { cls: 'attack', title: 'Usar una tubería', note: 'Otro operador del shell', host: '127.0.0.1 | whoami' },
+    ];
+
+    $('ver').textContent = MODE === 'vulnerable' ? 'VULNERABLE' : 'CORREGIDA';
+    $('ver').className = `ver ${MODE}`;
+    $('swap').textContent = MODE === 'vulnerable' ? 'Ir a la versión corregida →' : '← Ir a la versión vulnerable';
+    $('swap').href = OTHER;
+    $('lista-wrap').hidden = MODE !== 'secure';
+    $('src-title').textContent = MODE === 'vulnerable' ? 'El código con el defecto' : 'El código corregido';
+    $('src').textContent = MODE === 'vulnerable'
+      ? "// El destino se pega en una línea que interpreta el shell\nconst comando = `ping ${CONTADOR} 2 ${host}`;\nexec(comando, { cwd, timeout });"
+      : "// Capa 1: lista blanca (IP o dominio válido)\nif (!(net.isIP(host) || HOSTNAME.test(host))) return rechazar();\n\n// Capa 2: sin shell, un argumento por elemento\nexecFile('ping', [CONTADOR, '2', host], { cwd, timeout });";
+
+    for (const s of ESCENARIOS) {
+      const chip = el('button', { type: 'button', class: `chip ${s.cls}` }, el('span', {}, s.title), el('code', {}, s.host), el('small', {}, s.note));
+      chip.addEventListener('click', () => { $('host').value = s.host; run(); });
+      $('chips').append(chip);
+    }
+
+    const toggle = (open) => { $('drawer').hidden = !open; $('open-class').hidden = open; };
+    $('open-class').addEventListener('click', () => toggle(true));
+    $('close-class').addEventListener('click', () => toggle(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
+    $('sin-lista').addEventListener('change', () => { if ($('host').value.trim()) run(); });
+
+    function showClass(host, r) {
+      $('exec').replaceChildren(...r.vista.map((p) => (typeof p === 'string' ? p : el('mark', {}, p.inj))));
+      const legit = !/[;&|`$<>^]/.test(host);
+      let v, why = null;
+      if (r.explotado) {
+        v = ['exploited', '✘ Ataque exitoso'];
+        why = 'El shell interpretó el operador y ejecutó un segundo comando con los permisos del servidor. Mira su salida debajo del ping en la página.';
+      } else if (r.rechazado) {
+        v = ['blocked', '✔ Ataque bloqueado'];
+        why = 'La lista blanca rechazó el destino antes de lanzar ningún proceso.';
+      } else if (legit) {
+        v = ['ok', '✔ Funciona con normalidad'];
+      } else {
+        v = ['blocked', '✔ Ataque bloqueado'];
+        why = 'Sin shell, el operador es un carácter más del nombre de host: ping no lo encuentra y no se ejecuta ningún otro comando.';
+      }
+      $('verdict').className = `verdict ${v[0]}`;
+      $('verdict').textContent = v[1];
+      $('why').textContent = why ?? '';
+      $('why').hidden = !why;
+    }
+  </script>
+</body>
+</html>

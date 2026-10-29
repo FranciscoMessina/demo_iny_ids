@@ -1,1 +1,0 @@
-Estas son unas notas de ejemplo para el contador de palabras de la demo.
