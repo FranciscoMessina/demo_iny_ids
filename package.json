@@ -1,0 +1,17 @@
+{
+  "name": "demo-inyeccion",
+  "version": "1.0.0",
+  "description": "Demo educativa: ataques de inyección (SQL, comandos, eval, XSS) contra un servidor vulnerable y su versión corregida. Sin dependencias.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "ui": "node src/ui/server.js",
+    "vulnerable":"node src/vulnerable/server.js",
+    "secure": "node src/secure/server.js",
+    "attack": "node attacks/run.js",
+    "test": "node --test --disable-warning=ExperimentalWarning \"test/*.test.js\""
+  }
+}
